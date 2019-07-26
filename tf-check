@@ -1,0 +1,76 @@
+#!/bin/bash
+
+USER=`whoami`
+
+function generic_checks () {
+  [[ ! -d /Users/${USER}/libexec ]] && mkdir -p /Users/${USER}/libexec
+  [[ ! -d /Users/${USER}/bin/terraform ]] && mkdir -p /Users/${USER}/bin/terraform
+}
+
+function install_vers () {
+if [[ ! -d /Users/${USER}/libexec/terraform_${1}_darwin_amd64 && "$1" != "" ]]; then
+  echo "Version ${1} is being installed now."
+  rm -f /tmp/tf.zip
+  wget -q -O /tmp/tf.zip https://releases.hashicorp.com/terraform/$1/terraform_${1}_darwin_amd64.zip
+  unzip -d /Users/${USER}/libexec/terraform_${1}_darwin_amd64 /tmp/tf.zip
+  ln -fs /Users/${USER}/libexec/terraform_${1}_darwin_amd64/terraform /Users/${USER}/bin/terraform/tf
+  ln -fs /Users/${USER}/libexec/terraform_${1}_darwin_amd64/terraform /Users/${USER}/bin/terraform/terraform
+fi
+}
+
+function check_vers () {
+  if [[ "$(which terraform)" == "" ]]; then
+    vers="0.11.14"
+    install_vers $vers
+    check_vers
+  else
+    cvers=`terraform --version|head -1|awk '{print $NF}'|sed 's/v//'`
+    vers=`terraform --version|awk '/You can update/{print $2}'|sed 's/\.$//;s/^v//'`
+  fi
+  if [[ $vers == "" ]]; then
+    echo "No newer version available, current version: $cvers"
+  #  exit 0
+  else
+    echo "We have a new version ($vers), currently we are using the version $cvers."
+    install_vers $vers
+  fi
+}
+
+function select_vers () {
+  versions=(`echo "other"; ls /Users/${USER}/libexec/terraform_*_darwin_amd64/terraform|sed "s|/Users/$USER/libexec/terraform_||g;s|_darwin_amd64/terraform||g"`)
+  for i in "${!versions[@]}"; do
+      printf "%s) %s\n" "$i" "${versions[$i]}"
+  done
+
+  printf 'Select the version you want to use from the list: '
+  IFS= read -r opt
+  if [[ $opt =~ ^[0-9]+$ ]] && (( (opt >= 0) && (opt <= "${#versions[@]}") )); then
+    vers="${versions[$opt]}"
+
+    if [[ "${vers}" == "other" ]];then
+      printf 'Enter the other version you want to install: '
+      read -r nvo
+      install_vers $nvo
+      select_vers
+    else
+      if [[ -e "/Users/${USER}/libexec/terraform_${vers}_darwin_amd64/terraform" ]]; then
+        ln -fs /Users/${USER}/libexec/terraform_${vers}_darwin_amd64/terraform /Users/${USER}/bin/terraform/tf
+        ln -fs /Users/${USER}/libexec/terraform_${vers}_darwin_amd64/terraform /Users/${USER}/bin/terraform/terraform
+      fi
+      echo $vers > ~/.tf-version
+      printf "Version ${versions[$opt]} selected\n"
+    fi
+  elif [[ "$opt" == "" ]]; then
+    echo "Keeping default the current terraform version ($cvers)."
+  else
+      printf 'Selected version is not available.\n'
+  fi
+}
+
+check_vers
+select_vers
+
+
+
+
+
