@@ -19,7 +19,7 @@ fi
 }
 
 function check_vers () {
-  if [[ "$(which terraform)" == "" ]]; then
+  if [[ "$(which tf)" == "" ]]; then
     vers="0.11.14"
     install_vers $vers
     check_vers
@@ -67,10 +67,7 @@ function select_vers () {
   fi
 }
 
+generic_checks
 check_vers
 select_vers
-
-
-
-
 
