@@ -57,7 +57,7 @@ function select_vers () {
         ln -fs /Users/${USER}/libexec/terraform_${vers}_darwin_amd64/terraform /Users/${USER}/bin/terraform/tf
         ln -fs /Users/${USER}/libexec/terraform_${vers}_darwin_amd64/terraform /Users/${USER}/bin/terraform/terraform
       fi
-      echo $vers > ~/.tf-version
+      echo $vers > ~/.terraform-version
       printf "Version ${versions[$opt]} selected\n"
     fi
   elif [[ "$opt" == "" ]]; then
